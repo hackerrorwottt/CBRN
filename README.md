@@ -236,3 +236,4 @@ Open `/Users/shloksharma/Desktop/CBRN/dashboard/index.html` in any web browser t
 - **Lighting**: Real-time hard shadows limited to 20m distance; no dynamic soft shadows.
 - **Locomotion**: Discrete gaze-teleport waypoints eliminate vestibulo-ocular sensory conflict and motion sickness.
 - **Fail-Safe Offline Mode**: `OfflineQueue.cs` caches session telemetry locally if network drops, ensuring zero data loss.
+
