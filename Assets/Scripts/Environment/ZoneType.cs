@@ -11,3 +11,4 @@ namespace CBRN.Environment
         Evacuation_TriagePoint  // Safe extraction zone: Medical handover point
     }
 }
+
