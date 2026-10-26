@@ -12,3 +12,4 @@ namespace CBRN.AI
         Safe_Evacuated  // Successfully delivered to Triage / Decontamination point
     }
 }
+

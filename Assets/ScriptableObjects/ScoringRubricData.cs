@@ -37,3 +37,4 @@ namespace CBRN.Assessment
         public int maxAllowedCriticalMistakes = 3;
     }
 }
+

@@ -32,3 +32,4 @@ namespace CBRN.Core
         public float targetTimeSeconds = 60f;
     }
 }
+

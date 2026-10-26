@@ -143,3 +143,4 @@ function renderMistakeChart(distribution) {
 
 // Initial load on page ready
 window.addEventListener('DOMContentLoaded', loadDashboardData);
+

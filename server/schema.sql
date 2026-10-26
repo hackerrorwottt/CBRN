@@ -74,3 +74,4 @@ CREATE TABLE IF NOT EXISTS session_step_logs (
     FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE,
     INDEX idx_step_logs_session (session_id)
 ) ENGINE=InnoDB;
+

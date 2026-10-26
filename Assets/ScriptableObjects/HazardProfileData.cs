@@ -47,3 +47,4 @@ namespace CBRN.Hazards
         public int incorrectEntryPenalty = 25;
     }
 }
+

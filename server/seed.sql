@@ -26,3 +26,4 @@ INSERT INTO scenario_steps (scenario_id, step_number, step_name, objective_text,
 (1, 6, 'Evacuation to Triage', 'Escort the casualty safely out of the hot zone into the Decontamination Triage Point.', 90, 10),
 (1, 7, 'Debrief & Score Evaluation', 'Review mistake logs, exposure telemetry, and final simulation performance report.', 30, 10)
 ON DUPLICATE KEY UPDATE step_name=VALUES(step_name);
+
