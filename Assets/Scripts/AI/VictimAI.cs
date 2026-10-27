@@ -27,6 +27,9 @@ namespace CBRN.AI
         [Tooltip("Interval in seconds between random wander steps in panic state.")]
         [SerializeField] private float panicStepInterval = 2.5f;
 
+        [Tooltip("Repath interval in seconds when following trainee (preserves mobile CPU).")]
+        [SerializeField] private float followRepathInterval = 0.25f;
+
         [Header("Visual Feedback")]
         [SerializeField] private Renderer victimRenderer;
         [SerializeField] private Color panicColor = new Color(0.9f, 0.2f, 0.2f);
@@ -41,6 +44,7 @@ namespace CBRN.AI
         private Transform _playerTransform;
         private Vector3 _initialPosition;
         private float _panicTimer = 0f;
+        private float _followRepathTimer = 0f;
         private Material _instancedMat;
 
         public VictimState CurrentState => currentState;
@@ -120,9 +124,14 @@ namespace CBRN.AI
 
             if (_playerTransform != null && _agent != null && _agent.isOnNavMesh)
             {
-                _agent.stoppingDistance = followStoppingDistance;
-                _agent.speed = 2.4f;
-                _agent.SetDestination(_playerTransform.position);
+                _followRepathTimer += Time.deltaTime;
+                if (_followRepathTimer >= followRepathInterval)
+                {
+                    _followRepathTimer = 0f;
+                    _agent.stoppingDistance = followStoppingDistance;
+                    _agent.speed = 2.4f;
+                    _agent.SetDestination(_playerTransform.position);
+                }
             }
         }
 
