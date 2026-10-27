@@ -1,12 +1,11 @@
 USE cbrn_trainer;
 
 -- Default Users (Passwords hashed with bcrypt: 'password123')
--- Hash: $2b$10$Y10H6g6eCiqQx4x7Vq7ygeYw8V7G1k4qWz0kXy7w6E7d0E3kQ3e2q (analogue)
 INSERT INTO users (username, email, password_hash, role) VALUES
-('trainee_shlok', 'trainee@cbrn.gov.in', '$2b$10$tZ9v7o9U9eZ4i4k6m8o2uev9Z3q8X2a5c7e0m1k3q5w7e9r1t3y5u', 'trainee'),
-('instructor_singh', 'instructor@cbrn.gov.in', '$2b$10$tZ9v7o9U9eZ4i4k6m8o2uev9Z3q8X2a5c7e0m1k3q5w7e9r1t3y5u', 'instructor'),
-('admin_ndrf', 'admin@cbrn.gov.in', '$2b$10$tZ9v7o9U9eZ4i4k6m8o2uev9Z3q8X2a5c7e0m1k3q5w7e9r1t3y5u', 'admin')
-ON DUPLICATE KEY UPDATE username=VALUES(username);
+('trainee_shlok', 'trainee@cbrn.gov.in', '$2b$10$btCb5jv5pZR0TquIcq5SXOa1G9Z9zjdnCjNpuem5k/CFtzt8idvkW', 'trainee'),
+('instructor_singh', 'instructor@cbrn.gov.in', '$2b$10$btCb5jv5pZR0TquIcq5SXOa1G9Z9zjdnCjNpuem5k/CFtzt8idvkW', 'instructor'),
+('admin_ndrf', 'admin@cbrn.gov.in', '$2b$10$btCb5jv5pZR0TquIcq5SXOa1G9Z9zjdnCjNpuem5k/CFtzt8idvkW', 'admin')
+ON DUPLICATE KEY UPDATE username=VALUES(username), password_hash=VALUES(password_hash);
 
 -- Scenarios (1 Chemical active, 3 procedural placeholders)
 INSERT INTO scenarios (id, code, title, hazard_type, description, is_active) VALUES
