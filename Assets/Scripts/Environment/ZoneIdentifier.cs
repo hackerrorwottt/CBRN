@@ -26,7 +26,9 @@ namespace CBRN.Environment
         private void OnTriggerEnter(Collider other)
         {
             // Verify if the entering entity is the trainee
-            if (other.GetComponentInParent<PlayerPPEState>() != null ||
+            if (other.GetComponentInParent<SafetyZoneMonitor>() != null ||
+                other.GetComponentInChildren<SafetyZoneMonitor>() != null ||
+                other.GetComponentInParent<PlayerPPEState>() != null ||
                 other.GetComponentInParent<GazeInteractor>() != null ||
                 other.CompareTag("MainCamera"))
             {

@@ -97,16 +97,23 @@ namespace CBRN.Hazards
 
         private void UpdateBounds()
         {
+            bool activeBounds = currentRadius > 0.1f;
+
+            if (!activeBounds)
+            {
+                _isTraineeInside = false;
+            }
+
             if (gasCollider != null)
             {
                 gasCollider.radius = currentRadius;
-                gasCollider.enabled = currentRadius > 0.1f;
+                gasCollider.enabled = activeBounds;
             }
 
             if (gasCloudVisual != null)
             {
                 // Scale visual sphere/cylinder to match the radius and hide when fully dissipated
-                gasCloudVisual.gameObject.SetActive(currentRadius > 0.1f);
+                gasCloudVisual.gameObject.SetActive(activeBounds);
                 gasCloudVisual.localScale = new Vector3(currentRadius * 2f, currentRadius * 1.2f, currentRadius * 2f);
             }
         }
@@ -134,7 +141,7 @@ namespace CBRN.Hazards
 
         private void OnTriggerEnter(Collider other)
         {
-            PlayerPPEState ppe = other.GetComponentInParent<PlayerPPEState>();
+            PlayerPPEState ppe = other.GetComponentInParent<PlayerPPEState>() ?? other.GetComponentInChildren<PlayerPPEState>();
             if (ppe != null)
             {
                 _traineePPE = ppe;
@@ -144,7 +151,7 @@ namespace CBRN.Hazards
 
         private void OnTriggerExit(Collider other)
         {
-            PlayerPPEState ppe = other.GetComponentInParent<PlayerPPEState>();
+            PlayerPPEState ppe = other.GetComponentInParent<PlayerPPEState>() ?? other.GetComponentInChildren<PlayerPPEState>();
             if (ppe != null)
             {
                 _isTraineeInside = false;

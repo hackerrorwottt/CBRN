@@ -60,6 +60,12 @@ namespace CBRN.Hazards
         {
             if (_isIdentified) return;
 
+            if (hazardProfile == null)
+            {
+                Debug.LogWarning($"[HazardPlacard] Cannot identify hazard on {gameObject.name}: hazardProfile is not assigned.");
+                return;
+            }
+
             _isIdentified = true;
             if (_instancedMat != null) _instancedMat.color = identifiedColor;
 

@@ -50,10 +50,10 @@ namespace CBRN.Hazards
 
         public void OnGazeStay(float normalizedProgress)
         {
-            // Spin the valve slightly as dwell timer progresses
+            // Spin the cylindrical valve wheel smoothly around its axle axis (local Y) as dwell progresses
             if (!_isClosed)
             {
-                transform.Rotate(Vector3.forward * (300f * Time.deltaTime));
+                transform.Rotate(Vector3.up * (300f * Time.deltaTime));
             }
         }
 
