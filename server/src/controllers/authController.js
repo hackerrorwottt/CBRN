@@ -18,12 +18,39 @@ async function register(req, res) {
       });
     }
 
+    const cleanUsername = String(username).trim();
+    const cleanEmail = String(email).trim().toLowerCase();
+
+    if (cleanUsername.length < 3) {
+      return res.status(400).json({
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'Username must be at least 3 characters long.'
+      });
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return res.status(400).json({
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'Please provide a valid email address.'
+      });
+    }
+
+    if (typeof password !== 'string' || password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'Password must be at least 6 characters long.'
+      });
+    }
+
     const assignedRole = ['trainee', 'instructor', 'admin'].includes(role) ? role : 'trainee';
 
     // Check duplicate
     const [existing] = await db.execute(
       'SELECT id FROM users WHERE email = ? OR username = ? LIMIT 1',
-      [email, username]
+      [cleanEmail, cleanUsername]
     );
 
     if (existing.length > 0) {
@@ -40,14 +67,14 @@ async function register(req, res) {
     // Insert user
     const [result] = await db.execute(
       'INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)',
-      [username, email, passwordHash, assignedRole]
+      [cleanUsername, cleanEmail, passwordHash, assignedRole]
     );
 
     const userId = result.insertId;
 
     // Issue JWT
     const token = jwt.sign(
-      { id: userId, username, email, role: assignedRole },
+      { id: userId, username: cleanUsername, email: cleanEmail, role: assignedRole },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
     );
@@ -58,8 +85,8 @@ async function register(req, res) {
       token,
       user: {
         id: userId,
-        username,
-        email,
+        username: cleanUsername,
+        email: cleanEmail,
         role: assignedRole
       }
     });

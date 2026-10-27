@@ -24,6 +24,35 @@ async function saveSession(req, res) {
       });
     }
 
+    const parsedUserId = Number(user_id);
+    const parsedScenarioId = Number(scenario_id);
+    const parsedScore = Number(score);
+    const parsedDuration = Number(total_duration_seconds);
+
+    if (!Number.isInteger(parsedUserId) || parsedUserId < 1 || !Number.isInteger(parsedScenarioId) || parsedScenarioId < 1) {
+      return res.status(400).json({
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'user_id and scenario_id must be positive integers.'
+      });
+    }
+
+    if (!Number.isFinite(parsedScore) || parsedScore < 0 || parsedScore > 100) {
+      return res.status(400).json({
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'score must be a number between 0 and 100.'
+      });
+    }
+
+    if (!Number.isFinite(parsedDuration) || parsedDuration < 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'total_duration_seconds must be a non-negative number.'
+      });
+    }
+
     const sessionStatus = status === 'FAILED' ? 'FAILED' : 'COMPLETED';
 
     connection = await db.getConnection();
@@ -34,11 +63,11 @@ async function saveSession(req, res) {
       `INSERT INTO sessions (user_id, scenario_id, score, total_duration_seconds, total_mistakes, status)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
-        user_id,
-        scenario_id,
-        score,
-        total_duration_seconds,
-        total_mistakes || 0,
+        parsedUserId,
+        parsedScenarioId,
+        Math.round(parsedScore),
+        parsedDuration,
+        Math.max(0, parseInt(total_mistakes, 10) || 0),
         sessionStatus
       ]
     );

@@ -21,6 +21,26 @@ describe('CBRN-Trainer REST API Smoke & Validation Tests', () => {
       expect(res.body.success).toBe(false);
       expect(res.body.error).toBe('VALIDATION_ERROR');
     });
+
+    it('should reject registration with malformed email address (400)', async () => {
+      const res = await request(app)
+        .post('/api/auth/register')
+        .send({ username: 'trainee_test', email: 'not-an-email', password: 'password123' });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error).toBe('VALIDATION_ERROR');
+    });
+
+    it('should reject registration with password shorter than 6 characters (400)', async () => {
+      const res = await request(app)
+        .post('/api/auth/register')
+        .send({ username: 'trainee_test', email: 'trainee@ndrf.gov.in', password: '123' });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error).toBe('VALIDATION_ERROR');
+    });
   });
 
   describe('POST /api/auth/login validation', () => {
@@ -40,6 +60,26 @@ describe('CBRN-Trainer REST API Smoke & Validation Tests', () => {
       const res = await request(app)
         .post('/api/sessions')
         .send({ score: 95 }); // Missing user_id, scenario_id, total_duration_seconds
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error).toBe('VALIDATION_ERROR');
+    });
+
+    it('should reject session uploads when score exceeds 0-100 rubric range (400)', async () => {
+      const res = await request(app)
+        .post('/api/sessions')
+        .send({ user_id: 1, scenario_id: 1, score: 150, total_duration_seconds: 120 });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error).toBe('VALIDATION_ERROR');
+    });
+
+    it('should reject session uploads with negative duration (400)', async () => {
+      const res = await request(app)
+        .post('/api/sessions')
+        .send({ user_id: 1, scenario_id: 1, score: 85, total_duration_seconds: -5 });
 
       expect(res.statusCode).toBe(400);
       expect(res.body.success).toBe(false);
