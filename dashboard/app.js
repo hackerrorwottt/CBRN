@@ -59,7 +59,13 @@ function renderTraineeTable(trainees) {
   tbody.innerHTML = '';
 
   if (trainees.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No trainee records found.</td></tr>';
+    const emptyRow = document.createElement('tr');
+    const emptyCell = document.createElement('td');
+    emptyCell.colSpan = 6;
+    emptyCell.style.textAlign = 'center';
+    emptyCell.textContent = 'No trainee records found.';
+    emptyRow.appendChild(emptyCell);
+    tbody.appendChild(emptyRow);
     return;
   }
 
@@ -76,14 +82,34 @@ function renderTraineeTable(trainees) {
     }
 
     const row = document.createElement('tr');
-    row.innerHTML = `
-      <td><strong>${t.username}</strong></td>
-      <td style="color: var(--text-muted);">${t.email}</td>
-      <td>${t.total_sessions}</td>
-      <td><strong>${Math.round(t.average_score)}</strong></td>
-      <td>${avgMistakes.toFixed(1)}</td>
-      <td><span class="status-pill ${adaptiveClass}">${adaptiveLabel}</span></td>
-    `;
+
+    const userCell = document.createElement('td');
+    const strongUser = document.createElement('strong');
+    strongUser.textContent = t.username;
+    userCell.appendChild(strongUser);
+
+    const emailCell = document.createElement('td');
+    emailCell.style.color = 'var(--text-muted)';
+    emailCell.textContent = t.email;
+
+    const sessionsCell = document.createElement('td');
+    sessionsCell.textContent = t.total_sessions;
+
+    const scoreCell = document.createElement('td');
+    const strongScore = document.createElement('strong');
+    strongScore.textContent = Math.round(t.average_score);
+    scoreCell.appendChild(strongScore);
+
+    const mistakesCell = document.createElement('td');
+    mistakesCell.textContent = avgMistakes.toFixed(1);
+
+    const statusCell = document.createElement('td');
+    const pill = document.createElement('span');
+    pill.className = `status-pill ${adaptiveClass}`;
+    pill.textContent = adaptiveLabel;
+    statusCell.appendChild(pill);
+
+    row.append(userCell, emailCell, sessionsCell, scoreCell, mistakesCell, statusCell);
     tbody.appendChild(row);
   });
 }
@@ -106,8 +132,16 @@ function renderScoreChart(labels, scores) {
     options: {
       responsive: true,
       scales: {
-        y: { beginAtZero: true, max: 100, grid: { color: '#334155' } },
-        x: { grid: { display: false } }
+        y: {
+          beginAtZero: true,
+          max: 100,
+          grid: { color: '#334155' },
+          ticks: { color: '#cbd5e1' }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#cbd5e1' }
+        }
       },
       plugins: { legend: { display: false } }
     }
@@ -143,4 +177,3 @@ function renderMistakeChart(distribution) {
 
 // Initial load on page ready
 window.addEventListener('DOMContentLoaded', loadDashboardData);
-
