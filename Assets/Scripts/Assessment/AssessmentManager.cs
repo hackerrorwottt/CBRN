@@ -107,10 +107,26 @@ namespace CBRN.Assessment
         public void FinalizeAssessment()
         {
             if (_isFinalized) return;
+
+            // Evaluate total time overrun penalty against target 360s simulation window
+            float totalDuration = SessionDuration;
+            const float targetScenarioWindow = 360f;
+            if (rubric != null && totalDuration > targetScenarioWindow)
+            {
+                int overrunBlocks = Mathf.FloorToInt((totalDuration - targetScenarioWindow) / 10f);
+                if (overrunBlocks > 0)
+                {
+                    int timePenalty = overrunBlocks * rubric.timeOverrunPenaltyPerBlock;
+                    RecordMistake($"Time Overrun: Exceeded 6-minute operational window by {(int)(totalDuration - targetScenarioWindow)}s.", timePenalty);
+                }
+            }
+
             _isFinalized = true;
 
             int passingThreshold = rubric != null ? rubric.passingScore : 70;
-            bool isPassed = totalScore >= passingThreshold;
+            int maxCriticalMistakes = rubric != null ? rubric.maxAllowedCriticalMistakes : 3;
+
+            bool isPassed = (totalScore >= passingThreshold) && (mistakes.Count <= maxCriticalMistakes);
 
             string summary = $"Final Score: {totalScore}/100. Mistakes: {mistakes.Count}. Status: {(isPassed ? "PASSED (Simulation Criteria)" : "NEEDS RETRAINING")}";
             Debug.Log($"[AssessmentManager] {summary}");
