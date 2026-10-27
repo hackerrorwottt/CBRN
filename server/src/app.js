@@ -9,6 +9,18 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Lightweight Request Logger (disabled during automated Jest runs)
+if (process.env.NODE_ENV !== 'test') {
+  app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+      const duration = Date.now() - start;
+      console.log(`[API] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${duration}ms)`);
+    });
+    next();
+  });
+}
+
 // Healthcheck
 app.get('/health', (req, res) => {
   res.status(200).json({
