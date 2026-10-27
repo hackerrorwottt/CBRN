@@ -121,7 +121,7 @@ namespace CBRN.Core
             };
 
             string[] hints = {
-                "Look at the large blue Briefing Board in front of your starting location.",
+                "Look slightly right at the large blue Briefing Board in front of your starting location.",
                 "Look for the diamond hazard placard located on Tank Alpha.",
                 "Equip the Green Level A suit. Do not use Level D or C for vapor plumes.",
                 "Ensure your Level A suit is sealed before passing the yellow perimeter barriers.",

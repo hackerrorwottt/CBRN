@@ -47,18 +47,24 @@ namespace CBRN.Environment
             coldZone.transform.SetParent(root.transform);
             coldZone.transform.position = new Vector3(0f, 0f, -12f);
 
-            // Briefing Board (Billboard at Z: -15, X: 0)
+            // Briefing Board Assembly placed in front-right of trainee spawn (0, 0, -13), angled to face trainee
+            GameObject briefingAssembly = new GameObject("Prop_BriefingAssembly");
+            briefingAssembly.transform.SetParent(coldZone.transform);
+            briefingAssembly.transform.position = new Vector3(2.8f, 0f, -10.5f);
+            briefingAssembly.transform.rotation = Quaternion.LookRotation(new Vector3(2.8f, 0f, 2.5f));
+
             GameObject briefingBoard = GameObject.CreatePrimitive(PrimitiveType.Cube);
             briefingBoard.name = "Prop_BriefingBoard";
-            briefingBoard.transform.SetParent(coldZone.transform);
-            briefingBoard.transform.position = new Vector3(0f, 1.6f, -15f);
+            briefingBoard.transform.SetParent(briefingAssembly.transform);
+            briefingBoard.transform.localPosition = new Vector3(0f, 1.6f, 0f);
+            briefingBoard.transform.localRotation = Quaternion.identity;
             briefingBoard.transform.localScale = new Vector3(3f, 1.8f, 0.1f);
             briefingBoard.GetComponent<Renderer>().sharedMaterial = matStagingBlue;
             SetStatic(briefingBoard);
 
             // Briefing Board Stand Posts
-            CreatePost(coldZone.transform, new Vector3(-1.4f, 0.8f, -15f), matSteel);
-            CreatePost(coldZone.transform, new Vector3(1.4f, 0.8f, -15f), matSteel);
+            CreatePost(briefingAssembly.transform, new Vector3(-1.4f, 0.8f, 0f), matSteel);
+            CreatePost(briefingAssembly.transform, new Vector3(1.4f, 0.8f, 0f), matSteel);
 
             // PPE Selection Station Table (X: -4, Z: -12)
             GameObject ppeTable = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -165,12 +171,12 @@ namespace CBRN.Environment
 #endif
         }
 
-        private void CreatePost(Transform parent, Vector3 pos, Material mat)
+        private void CreatePost(Transform parent, Vector3 localPos, Material mat)
         {
             GameObject post = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             post.name = "Post";
             post.transform.SetParent(parent);
-            post.transform.position = pos;
+            post.transform.localPosition = localPos;
             post.transform.localScale = new Vector3(0.1f, 0.8f, 0.1f);
             post.GetComponent<Renderer>().sharedMaterial = mat;
             SetStatic(post);
