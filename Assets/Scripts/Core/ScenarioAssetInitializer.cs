@@ -370,7 +370,14 @@ namespace CBRN.Core
             CreateWaypoint("Teleport_HotZone_Observation", new Vector3(0f, 0.02f, 3f));
             CreateWaypoint("Teleport_Decon_TriagePoint", new Vector3(6f, 0.02f, -4f));
 
-            // 14. Save Complete Scene
+            // 14. Setup 3D WorldSpace UI Canvases (Briefing Board, Virtual Instructor HUD, Debrief Scorecard)
+            GameObject briefingAssembly = GameObject.Find("Prop_BriefingAssembly");
+            Transform briefingAnchor = briefingAssembly != null
+                ? briefingAssembly.transform
+                : (briefingBoardObj != null ? briefingBoardObj.transform.parent : null);
+            SetupWorldSpaceUICanvases(uiManager, camGo.transform, briefingAnchor);
+
+            // 15. Save Complete Scene
             EditorSceneManager.SaveScene(scene, MainScenePath);
 
             // Register in Build Settings
@@ -423,6 +430,231 @@ namespace CBRN.Core
                 EditorUtility.SetDirty(asset);
             }
             return asset;
+        }
+
+        private static void SetupWorldSpaceUICanvases(UIManager uiManager, Transform cameraTransform, Transform briefingAnchor)
+        {
+            Font uiFont = LoadBuiltinFont();
+
+            // 1. Briefing Board Canvas (Cold Zone)
+            if (briefingAnchor != null)
+            {
+                GameObject briefingCanvas = CreateWorldSpaceCanvas(
+                    "Canvas_BriefingBoardUI",
+                    briefingAnchor,
+                    new Vector3(0f, 1.6f, -0.06f),
+                    new Vector2(600f, 360f),
+                    0.0046f);
+
+                CreateStretchImage("Panel_BriefingBG", briefingCanvas.transform, new Color(0.05f, 0.10f, 0.22f, 0.88f));
+
+                Text briefingTitle = CreateUIText(
+                    "Text_BriefingTitle",
+                    briefingCanvas.transform,
+                    uiFont,
+                    new Vector2(0f, 138f),
+                    new Vector2(560f, 52f),
+                    28,
+                    FontStyle.Bold,
+                    TextAnchor.MiddleCenter,
+                    Color.cyan,
+                    "CBRN INCIDENT BRIEFING (PS 269)");
+
+                Text briefingBody = CreateUIText(
+                    "Text_BriefingBody",
+                    briefingCanvas.transform,
+                    uiFont,
+                    new Vector2(0f, -24f),
+                    new Vector2(550f, 255f),
+                    17,
+                    FontStyle.Normal,
+                    TextAnchor.UpperLeft,
+                    Color.white,
+                    "Awaiting incident briefing parameters...");
+
+                SetPrivateField(uiManager, "briefingTitleText", briefingTitle);
+                SetPrivateField(uiManager, "briefingBodyText", briefingBody);
+            }
+
+            // 2. Virtual Instructor HUD Banner (Camera-locked lower FOV for comfortable Cardboard reading)
+            GameObject hudCanvas = CreateWorldSpaceCanvas(
+                "Canvas_InstructorHUD",
+                cameraTransform,
+                new Vector3(0f, -0.40f, 1.5f),
+                new Vector2(620f, 110f),
+                0.0014f);
+
+            Image hintBg = CreateStretchImage("Image_HintBackground", hudCanvas.transform, new Color(0.1f, 0.2f, 0.4f, 0.85f));
+            Text hintText = CreateUIText(
+                "Text_InstructorHint",
+                hudCanvas.transform,
+                uiFont,
+                Vector2.zero,
+                new Vector2(580f, 92f),
+                19,
+                FontStyle.Normal,
+                TextAnchor.MiddleCenter,
+                Color.white,
+                "Look at the blue Briefing Board on your right to begin.");
+
+            SetPrivateField(uiManager, "hintBackground", hintBg);
+            SetPrivateField(uiManager, "hintText", hintText);
+
+            // 3. Debrief Scorecard Panel (Hidden until Step 7 Finalization)
+            GameObject debriefCanvas = CreateWorldSpaceCanvas(
+                "Canvas_DebriefScorecard",
+                cameraTransform,
+                new Vector3(0f, 0.05f, 1.8f),
+                new Vector2(640f, 440f),
+                0.0018f);
+
+            CreateStretchImage("Panel_DebriefBG", debriefCanvas.transform, new Color(0.06f, 0.09f, 0.16f, 0.94f));
+
+            Text scoreText = CreateUIText(
+                "Text_DebriefScore",
+                debriefCanvas.transform,
+                uiFont,
+                new Vector2(0f, 160f),
+                new Vector2(580f, 64f),
+                38,
+                FontStyle.Bold,
+                TextAnchor.MiddleCenter,
+                Color.green,
+                "SCORE: --/100");
+
+            Text statusText = CreateUIText(
+                "Text_DebriefStatus",
+                debriefCanvas.transform,
+                uiFont,
+                new Vector2(0f, 105f),
+                new Vector2(580f, 44f),
+                22,
+                FontStyle.Bold,
+                TextAnchor.MiddleCenter,
+                Color.white,
+                "EVALUATION: PENDING");
+
+            Text mistakesText = CreateUIText(
+                "Text_DebriefMistakes",
+                debriefCanvas.transform,
+                uiFont,
+                new Vector2(0f, -15f),
+                new Vector2(560f, 175f),
+                18,
+                FontStyle.Normal,
+                TextAnchor.UpperLeft,
+                new Color(0.95f, 0.85f, 0.65f),
+                "Total Safety Violations: 0");
+
+            Text disclaimerText = CreateUIText(
+                "Text_DebriefDisclaimer",
+                debriefCanvas.transform,
+                uiFont,
+                new Vector2(0f, -155f),
+                new Vector2(560f, 85f),
+                15,
+                FontStyle.Italic,
+                TextAnchor.MiddleCenter,
+                new Color(0.75f, 0.82f, 0.92f),
+                "Educational training simulation prototype only.");
+
+            debriefCanvas.SetActive(false);
+
+            SetPrivateField(uiManager, "debriefPanel", debriefCanvas);
+            SetPrivateField(uiManager, "debriefScoreText", scoreText);
+            SetPrivateField(uiManager, "debriefStatusText", statusText);
+            SetPrivateField(uiManager, "debriefMistakesSummaryText", mistakesText);
+            SetPrivateField(uiManager, "debriefDisclaimerText", disclaimerText);
+        }
+
+        private static Font LoadBuiltinFont()
+        {
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (font == null)
+            {
+                font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            }
+            return font;
+        }
+
+        private static GameObject CreateWorldSpaceCanvas(string name, Transform parent, Vector3 localPos, Vector2 sizeDelta, float scale)
+        {
+            GameObject canvasGo = new GameObject(name);
+            canvasGo.transform.SetParent(parent, false);
+
+            Canvas canvas = canvasGo.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+
+            CanvasScaler scaler = canvasGo.AddComponent<CanvasScaler>();
+            scaler.dynamicPixelsPerUnit = 10f;
+
+            RectTransform rect = canvasGo.GetComponent<RectTransform>();
+            rect.sizeDelta = sizeDelta;
+            rect.localPosition = localPos;
+            rect.localRotation = Quaternion.identity;
+            rect.localScale = new Vector3(scale, scale, scale);
+
+            return canvasGo;
+        }
+
+        private static Image CreateStretchImage(string name, Transform parent, Color color)
+        {
+            GameObject imgGo = new GameObject(name);
+            imgGo.transform.SetParent(parent, false);
+
+            Image img = imgGo.AddComponent<Image>();
+            img.color = color;
+            img.raycastTarget = false;
+
+            RectTransform rect = imgGo.GetComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            return img;
+        }
+
+        private static Text CreateUIText(
+            string name,
+            Transform parent,
+            Font font,
+            Vector2 anchoredPos,
+            Vector2 size,
+            int fontSize,
+            FontStyle style,
+            TextAnchor alignment,
+            Color color,
+            string initialText)
+        {
+            GameObject textGo = new GameObject(name);
+            textGo.transform.SetParent(parent, false);
+
+            Text textComp = textGo.AddComponent<Text>();
+            if (font != null) textComp.font = font;
+            textComp.fontSize = fontSize;
+            textComp.fontStyle = style;
+            textComp.alignment = alignment;
+            textComp.color = color;
+            textComp.horizontalOverflow = HorizontalWrapMode.Wrap;
+            textComp.verticalOverflow = VerticalWrapMode.Truncate;
+            textComp.raycastTarget = false;
+            textComp.text = initialText;
+
+            RectTransform rect = textGo.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = anchoredPos;
+            rect.sizeDelta = size;
+
+            return textComp;
+        }
+
+        private static void SetPrivateField(object target, string fieldName, object value)
+        {
+            if (target == null) return;
+            var field = target.GetType().GetField(fieldName, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            field?.SetValue(target, value);
         }
     }
 }
