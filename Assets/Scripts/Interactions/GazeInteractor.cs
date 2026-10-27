@@ -68,6 +68,13 @@ namespace CBRN.Interactions
             {
                 RaycastHit hit = hits[i];
 
+                // Ignore colliders belonging to the player rig itself
+                Transform rigRoot = transform.parent != null ? transform.parent : transform;
+                if (hit.collider.gameObject == rigRoot.gameObject || hit.collider.transform.IsChildOf(transform))
+                {
+                    continue;
+                }
+
                 // Check if this object or its parent is interactable
                 IGazeInteractable interactable = hit.collider.GetComponentInParent<IGazeInteractable>();
 

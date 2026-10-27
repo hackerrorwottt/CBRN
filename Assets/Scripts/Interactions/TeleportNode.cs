@@ -78,9 +78,11 @@ namespace CBRN.Interactions
 
             if (playerTransform != null)
             {
-                // Teleport player directly above node at eye level
+                // Preserve ground-level position for PlayerRig (whose child Main Camera provides eye height),
+                // or apply eyeLevelHeight when teleporting a standalone camera without a rig parent.
                 Vector3 destination = transform.position;
-                destination.y += eyeLevelHeight;
+                bool isStandaloneCamera = Camera.main != null && playerTransform == Camera.main.transform;
+                destination.y = isStandaloneCamera ? (transform.position.y + eyeLevelHeight) : Mathf.Max(0f, transform.position.y - 0.02f);
                 playerTransform.position = destination;
 
                 Debug.Log($"[TeleportNode] Trainee teleported to waypoint: {gameObject.name} at {destination}");

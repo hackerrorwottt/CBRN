@@ -18,6 +18,9 @@ namespace CBRN.Player
         [SerializeField] private float maxPitchAngle = 80f;
 
         [Header("Editor Navigation")]
+        [Tooltip("Root rig transform to translate with WASD (defaults to parent PlayerRig if attached to camera).")]
+        [SerializeField] private Transform rigTransform;
+
         [Tooltip("Comfortable walking speed for testing the compound in the Editor.")]
         [SerializeField] private float moveSpeed = 4.0f;
 
@@ -36,9 +39,14 @@ namespace CBRN.Player
             return;
 #endif
 
-            Vector3 currentEuler = transform.eulerAngles;
+            if (rigTransform == null)
+            {
+                rigTransform = transform.parent != null ? transform.parent : transform;
+            }
+
+            Vector3 currentEuler = transform.localEulerAngles;
             _yaw = currentEuler.y;
-            _pitch = currentEuler.x;
+            _pitch = currentEuler.x > 180f ? currentEuler.x - 360f : currentEuler.x;
         }
 
         private void Update()
@@ -82,7 +90,7 @@ namespace CBRN.Player
             _pitch -= mouseY;
             _pitch = Mathf.Clamp(_pitch, minPitchAngle, maxPitchAngle);
 
-            transform.rotation = Quaternion.Euler(_pitch, _yaw, 0f);
+            transform.localRotation = Quaternion.Euler(_pitch, _yaw, 0f);
         }
 
         private void HandleMovement()
@@ -92,6 +100,7 @@ namespace CBRN.Player
 
             if (Mathf.Abs(horizontal) < 0.01f && Mathf.Abs(vertical) < 0.01f) return;
 
+            Transform moveTarget = rigTransform != null ? rigTransform : transform;
             float speed = moveSpeed * (Input.GetKey(KeyCode.LeftShift) ? sprintMultiplier : 1.0f);
 
             // Move relative to camera facing direction, flattened on ground plane
@@ -104,7 +113,7 @@ namespace CBRN.Player
             right.Normalize();
 
             Vector3 moveDirection = (forward * vertical + right * horizontal).normalized;
-            transform.position += moveDirection * (speed * Time.deltaTime);
+            moveTarget.position += moveDirection * (speed * Time.deltaTime);
         }
     }
 }
