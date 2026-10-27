@@ -56,6 +56,24 @@ describe('CBRN-Trainer REST API Smoke & Validation Tests', () => {
     });
   });
 
+  describe('GET /api/sessions/user/:userId validation', () => {
+    it('should return 400 Bad Request when user ID is not an integer', async () => {
+      const res = await request(app).get('/api/sessions/user/abc');
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error).toBe('INVALID_ID');
+    });
+  });
+
+  describe('GET /api/sessions/adaptive-difficulty/:userId validation', () => {
+    it('should return 400 Bad Request when adaptive difficulty user ID is invalid', async () => {
+      const res = await request(app).get('/api/sessions/adaptive-difficulty/notanumber');
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error).toBe('INVALID_ID');
+    });
+  });
+
   describe('404 Fallback Handler', () => {
     it('should return standard JSON error format for non-existent routes', async () => {
       const res = await request(app).get('/api/non-existent-endpoint');
