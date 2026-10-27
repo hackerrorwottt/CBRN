@@ -307,19 +307,27 @@ namespace CBRN.Core
 
                 ValveShutoff valveComp = valve.AddComponent<ValveShutoff>();
 
-                // Gas Plume
-                GameObject gasPlume = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                gasPlume.name = "GasPlume_ChemicalVapor";
+                // Gas Plume: unscaled root with SphereCollider + HazardSystem, and separate visual child
+                // so scaling the visual does not multiply SphereCollider.radius exponentially.
+                GameObject gasPlume = new GameObject("GasPlume_ChemicalVapor");
                 gasPlume.transform.position = ruptureSource.transform.position;
-                gasPlume.transform.localScale = new Vector3(5f, 3f, 5f);
+                gasPlume.transform.localScale = Vector3.one;
 
-                SphereCollider gasCol = gasPlume.GetComponent<SphereCollider>();
+                SphereCollider gasCol = gasPlume.AddComponent<SphereCollider>();
                 gasCol.isTrigger = true;
+                gasCol.radius = 2.5f;
 
-                // Translucent material
-                Shader shader = Shader.Find("Mobile/Diffuse") ?? Shader.Find("Standard");
-                Material gasMat = new Material(shader) { color = new Color(0.85f, 0.80f, 0.2f, 0.45f) };
-                gasPlume.GetComponent<Renderer>().sharedMaterial = gasMat;
+                GameObject gasVisual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                gasVisual.name = "GasPlume_Visual";
+                Object.DestroyImmediate(gasVisual.GetComponent<Collider>());
+                gasVisual.transform.SetParent(gasPlume.transform);
+                gasVisual.transform.localPosition = Vector3.zero;
+                gasVisual.transform.localScale = new Vector3(5f, 3f, 5f);
+
+                // Semi-transparent material so valve and casualty remain visible inside plume
+                Shader shader = Shader.Find("Legacy Shaders/Transparent/Diffuse") ?? Shader.Find("Mobile/Diffuse") ?? Shader.Find("Standard");
+                Material gasMat = new Material(shader) { color = new Color(0.85f, 0.80f, 0.2f, 0.35f) };
+                gasVisual.GetComponent<Renderer>().sharedMaterial = gasMat;
 
                 hazardSystem = gasPlume.AddComponent<HazardSystem>();
                 HazardProfileData hazardProfile = AssetDatabase.LoadAssetAtPath<HazardProfileData>($"{SoFolder}/Hazard_IndustrialChemicalVapor.asset");
@@ -327,7 +335,10 @@ namespace CBRN.Core
                 hazProfileField?.SetValue(hazardSystem, hazardProfile);
 
                 var visualField = typeof(HazardSystem).GetField("gasCloudVisual", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                visualField?.SetValue(hazardSystem, gasPlume.transform);
+                visualField?.SetValue(hazardSystem, gasVisual.transform);
+
+                var colliderField = typeof(HazardSystem).GetField("gasCollider", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                colliderField?.SetValue(hazardSystem, gasCol);
 
                 var targetHazardField = typeof(ValveShutoff).GetField("targetHazard", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 targetHazardField?.SetValue(valveComp, hazardSystem);
