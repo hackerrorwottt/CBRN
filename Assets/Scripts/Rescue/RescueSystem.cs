@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using CBRN.AI;
 using CBRN.PPE;
@@ -9,6 +10,7 @@ namespace CBRN.Rescue
     /// <summary>
     /// Manages search, triage, and extraction of casualties in the hazard area.
     /// Evaluates whether trainee secured the leak or donned proper PPE before entering.
+    /// Subscribes cleanly to victim events and handles proper cleanup.
     /// </summary>
     public class RescueSystem : MonoBehaviour
     {
@@ -20,6 +22,8 @@ namespace CBRN.Rescue
         public event Action<VictimAI> OnVictimTriaged;
         public event Action<string, int> OnRescueError; // message, penalty
 
+        private readonly List<VictimAI> _registeredVictims = new List<VictimAI>();
+
         private void Start()
         {
             if (playerPPE == null) playerPPE = FindObjectOfType<PlayerPPEState>();
@@ -30,7 +34,20 @@ namespace CBRN.Rescue
             foreach (var victim in victims)
             {
                 victim.OnVictimTriaged += HandleVictimTriaged;
+                _registeredVictims.Add(victim);
             }
+        }
+
+        private void OnDestroy()
+        {
+            foreach (var victim in _registeredVictims)
+            {
+                if (victim != null)
+                {
+                    victim.OnVictimTriaged -= HandleVictimTriaged;
+                }
+            }
+            _registeredVictims.Clear();
         }
 
         private void HandleVictimTriaged(VictimAI victim)
@@ -49,4 +66,3 @@ namespace CBRN.Rescue
         }
     }
 }
-

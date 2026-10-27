@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.UI;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using CBRN.PPE;
@@ -179,7 +180,6 @@ namespace CBRN.Core
             GameObject playerRig = new GameObject("PlayerRig");
             playerRig.transform.position = new Vector3(0f, 0f, -13f);
 
-            // Add CapsuleCollider and kinematic Rigidbody so all trigger volumes (Hazard gas, Zone boundaries) fire reliably
             CapsuleCollider playerCol = playerRig.AddComponent<CapsuleCollider>();
             playerCol.radius = 0.45f;
             playerCol.height = 1.8f;
@@ -227,11 +227,12 @@ namespace CBRN.Core
                 briefingBoardObj.AddComponent<BriefingBoard>();
             }
 
-            // 7. Setup Managers
+            // 7. Setup Managers & Rescue System
             GameObject managersGo = new GameObject("[--- MANAGERS ---]");
             MissionManager missionManager = managersGo.AddComponent<MissionManager>();
             AssessmentManager assessmentManager = managersGo.AddComponent<AssessmentManager>();
             HintSystem hintSystem = managersGo.AddComponent<HintSystem>();
+            RescueSystem rescueSystem = managersGo.AddComponent<RescueSystem>();
             OfflineQueue offlineQueue = managersGo.AddComponent<OfflineQueue>();
             ApiClient apiClient = managersGo.AddComponent<ApiClient>();
             UIManager uiManager = managersGo.AddComponent<UIManager>();

@@ -14,6 +14,7 @@ namespace CBRN.Core
     /// Master orchestrator for the 7-step chemical disaster scenario.
     /// Manages state transitions, listens to environmental domain events,
     /// coordinates scoring with AssessmentManager, and updates the HintSystem.
+    /// Enforces rigorous sequential flow from Step 1 through Step 7 without skipping steps.
     /// </summary>
     public class MissionManager : MonoBehaviour
     {
@@ -26,6 +27,7 @@ namespace CBRN.Core
         [SerializeField] private HintSystem hintSystem;
         [SerializeField] private SafetyZoneMonitor safetyZoneMonitor;
         [SerializeField] private PPESelectionStation ppeStation;
+        [SerializeField] private RescueSystem rescueSystem;
         [SerializeField] private EvacuationSystem evacuationSystem;
 
         [Header("State (Read-Only)")]
@@ -52,6 +54,7 @@ namespace CBRN.Core
             if (hintSystem == null) hintSystem = FindObjectOfType<HintSystem>();
             if (safetyZoneMonitor == null) safetyZoneMonitor = FindObjectOfType<SafetyZoneMonitor>();
             if (ppeStation == null) ppeStation = FindObjectOfType<PPESelectionStation>();
+            if (rescueSystem == null) rescueSystem = FindObjectOfType<RescueSystem>();
             if (evacuationSystem == null) evacuationSystem = FindObjectOfType<EvacuationSystem>();
         }
 
@@ -73,7 +76,14 @@ namespace CBRN.Core
                 safetyZoneMonitor.OnSafetyViolation += HandleSafetyViolation;
             }
 
-            // Step 5 & 6 Trigger: Rescue & Evacuation
+            // Step 5 Trigger: Casualty Triage (Transitions to Step 6 Evacuation)
+            if (rescueSystem != null)
+            {
+                rescueSystem.OnVictimTriaged += HandleVictimTriaged;
+                rescueSystem.OnRescueError += HandleSafetyViolation;
+            }
+
+            // Step 6 Trigger: Safe Evacuation to Triage Point (Transitions to Step 7 Debrief)
             if (evacuationSystem != null)
             {
                 evacuationSystem.OnAllCasualtiesEvacuated += HandleAllCasualtiesEvacuated;
@@ -88,6 +98,11 @@ namespace CBRN.Core
             {
                 safetyZoneMonitor.OnZoneEntered -= HandleZoneEntered;
                 safetyZoneMonitor.OnSafetyViolation -= HandleSafetyViolation;
+            }
+            if (rescueSystem != null)
+            {
+                rescueSystem.OnVictimTriaged -= HandleVictimTriaged;
+                rescueSystem.OnRescueError -= HandleSafetyViolation;
             }
             if (evacuationSystem != null)
             {
@@ -127,6 +142,7 @@ namespace CBRN.Core
         }
 
         // Domain event callbacks driving procedural flow:
+
         public void CompleteBriefing()
         {
             if (currentStep == MissionStep.Step1_Briefing)
@@ -169,6 +185,14 @@ namespace CBRN.Core
             }
         }
 
+        private void HandleVictimTriaged(VictimAI victim)
+        {
+            if (currentStep == MissionStep.Step5_VictimRescue)
+            {
+                TransitionToStep(MissionStep.Step6_Evacuation);
+            }
+        }
+
         private void HandleSafetyViolation(string message, int penalty)
         {
             assessmentManager?.RecordMistake(message, penalty);
@@ -176,11 +200,10 @@ namespace CBRN.Core
 
         private void HandleAllCasualtiesEvacuated()
         {
-            if (currentStep == MissionStep.Step5_VictimRescue || currentStep == MissionStep.Step6_Evacuation)
+            if (currentStep == MissionStep.Step6_Evacuation || currentStep == MissionStep.Step5_VictimRescue)
             {
                 TransitionToStep(MissionStep.Step7_Debrief);
             }
         }
     }
 }
-
