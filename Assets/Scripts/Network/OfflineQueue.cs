@@ -18,6 +18,7 @@ namespace CBRN.Network
     public class OfflineQueue : MonoBehaviour
     {
         private const string PrefsKey = "CBRN_Offline_Session_Queue";
+        private const int MaxQueueSize = 50;
 
         private QueuedSessionWrapper _queueWrapper;
 
@@ -33,7 +34,7 @@ namespace CBRN.Network
             {
                 try
                 {
-                    _queueWrapper = JsonUtility.FromJson<QueuedSessionWrapper>(rawJson);
+                    _queueWrapper = JsonUtility.FromJson<QueuedSessionWrapper>(rawJson) ?? new QueuedSessionWrapper();
                 }
                 catch (Exception e)
                 {
@@ -57,6 +58,13 @@ namespace CBRN.Network
         public void Enqueue(SessionUploadPayload payload)
         {
             if (payload == null) return;
+            if (_queueWrapper == null) _queueWrapper = new QueuedSessionWrapper();
+
+            if (_queueWrapper.serializedPayloads.Count >= MaxQueueSize)
+            {
+                // Drop oldest entry to avoid exceeding mobile storage quota
+                _queueWrapper.serializedPayloads.RemoveAt(0);
+            }
 
             string json = JsonUtility.ToJson(payload);
             _queueWrapper.serializedPayloads.Add(json);
@@ -80,6 +88,19 @@ namespace CBRN.Network
                 }
             }
             return list;
+        }
+
+        public void ReplacePending(List<SessionUploadPayload> remaining)
+        {
+            _queueWrapper.serializedPayloads.Clear();
+            if (remaining != null)
+            {
+                foreach (var item in remaining)
+                {
+                    _queueWrapper.serializedPayloads.Add(JsonUtility.ToJson(item));
+                }
+            }
+            SaveQueue();
         }
 
         public void ClearPending()
