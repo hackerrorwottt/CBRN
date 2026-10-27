@@ -29,6 +29,7 @@ namespace CBRN.Hazards
 
         [SerializeField] private bool isLeakActive = true;
         [SerializeField] private float currentRadius = 2.0f;
+        [SerializeField] private float cumulativeExposure = 0f;
 
         // Decoupled Events
         public event Action<float> OnHazardRadiusChanged;
@@ -39,6 +40,7 @@ namespace CBRN.Hazards
         private bool _isTraineeInside = false;
 
         public float CurrentRadius => currentRadius;
+        public float CumulativeExposure => cumulativeExposure;
         public bool IsActive => isLeakActive;
         public HazardProfileData Profile => profile;
 
@@ -72,7 +74,7 @@ namespace CBRN.Hazards
                     OnHazardRadiusChanged?.Invoke(currentRadius);
                 }
             }
-            else if (!isLeakActive && profile != null && currentRadius > 0.1f)
+            else if (!isLeakActive && profile != null && currentRadius > 0.0f)
             {
                 // Dissipation after valve containment
                 currentRadius = Mathf.Max(0f, currentRadius - (profile.dissipationSpeed * Time.deltaTime));
@@ -80,13 +82,14 @@ namespace CBRN.Hazards
                 OnHazardRadiusChanged?.Invoke(currentRadius);
             }
 
-            // Check exposure if trainee is inside without Level A PPE
-            if (_isTraineeInside && profile != null)
+            // Check exposure if trainee is inside an active plume without Level A PPE
+            if (_isTraineeInside && currentRadius > 0.25f && profile != null)
             {
                 bool isProtected = _traineePPE != null && _traineePPE.HasAdequateProtection(profile.minimumRequiredPPE);
                 if (!isProtected)
                 {
                     float exposureTick = profile.toxicityRatePerSecond * Time.deltaTime;
+                    cumulativeExposure = Mathf.Min(100f, cumulativeExposure + exposureTick);
                     OnTraineeExposed?.Invoke(exposureTick);
                 }
             }
@@ -97,11 +100,13 @@ namespace CBRN.Hazards
             if (gasCollider != null)
             {
                 gasCollider.radius = currentRadius;
+                gasCollider.enabled = currentRadius > 0.1f;
             }
 
             if (gasCloudVisual != null)
             {
-                // Scale visual sphere/cylinder to match the radius
+                // Scale visual sphere/cylinder to match the radius and hide when fully dissipated
+                gasCloudVisual.gameObject.SetActive(currentRadius > 0.1f);
                 gasCloudVisual.localScale = new Vector3(currentRadius * 2f, currentRadius * 1.2f, currentRadius * 2f);
             }
         }
