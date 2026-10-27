@@ -48,8 +48,17 @@ namespace CBRN.Network
             }
         }
 
+        private void EnsureLoaded()
+        {
+            if (_queueWrapper == null)
+            {
+                LoadQueue();
+            }
+        }
+
         private void SaveQueue()
         {
+            EnsureLoaded();
             string rawJson = JsonUtility.ToJson(_queueWrapper);
             PlayerPrefs.SetString(PrefsKey, rawJson);
             PlayerPrefs.Save();
@@ -58,7 +67,7 @@ namespace CBRN.Network
         public void Enqueue(SessionUploadPayload payload)
         {
             if (payload == null) return;
-            if (_queueWrapper == null) _queueWrapper = new QueuedSessionWrapper();
+            EnsureLoaded();
 
             if (_queueWrapper.serializedPayloads.Count >= MaxQueueSize)
             {
@@ -75,6 +84,7 @@ namespace CBRN.Network
 
         public List<SessionUploadPayload> GetPendingPayloads()
         {
+            EnsureLoaded();
             List<SessionUploadPayload> list = new List<SessionUploadPayload>();
             foreach (var json in _queueWrapper.serializedPayloads)
             {
@@ -92,12 +102,17 @@ namespace CBRN.Network
 
         public void ReplacePending(List<SessionUploadPayload> remaining)
         {
+            EnsureLoaded();
             _queueWrapper.serializedPayloads.Clear();
             if (remaining != null)
             {
-                foreach (var item in remaining)
+                int startIndex = Mathf.Max(0, remaining.Count - MaxQueueSize);
+                for (int i = startIndex; i < remaining.Count; i++)
                 {
-                    _queueWrapper.serializedPayloads.Add(JsonUtility.ToJson(item));
+                    if (remaining[i] != null)
+                    {
+                        _queueWrapper.serializedPayloads.Add(JsonUtility.ToJson(remaining[i]));
+                    }
                 }
             }
             SaveQueue();
@@ -105,6 +120,7 @@ namespace CBRN.Network
 
         public void ClearPending()
         {
+            EnsureLoaded();
             _queueWrapper.serializedPayloads.Clear();
             SaveQueue();
             Debug.Log("[OfflineQueue] Offline sync cache cleared.");
