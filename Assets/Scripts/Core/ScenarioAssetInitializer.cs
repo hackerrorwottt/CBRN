@@ -191,6 +191,11 @@ namespace CBRN.Core
 
             SafetyZoneMonitor safetyMonitor = playerRig.AddComponent<SafetyZoneMonitor>();
 
+            PlayerPPEState playerPPE = playerRig.AddComponent<PlayerPPEState>();
+            PPEItemData defaultPPE = AssetDatabase.LoadAssetAtPath<PPEItemData>($"{SoFolder}/PPE_LevelD_WorkCoveralls.asset");
+            var initialPPEField = typeof(PlayerPPEState).GetField("initialPPE", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            initialPPEField?.SetValue(playerPPE, defaultPPE);
+
             GameObject camGo = new GameObject("Main Camera");
             camGo.transform.SetParent(playerRig.transform);
             camGo.transform.localPosition = new Vector3(0f, 1.6f, 0f);
@@ -199,11 +204,6 @@ namespace CBRN.Core
             Camera cam = camGo.AddComponent<Camera>();
             cam.nearClipPlane = 0.1f;
             camGo.AddComponent<AudioListener>();
-
-            PlayerPPEState playerPPE = camGo.AddComponent<PlayerPPEState>();
-            PPEItemData defaultPPE = AssetDatabase.LoadAssetAtPath<PPEItemData>($"{SoFolder}/PPE_LevelD_WorkCoveralls.asset");
-            var initialPPEField = typeof(PlayerPPEState).GetField("initialPPE", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            initialPPEField?.SetValue(playerPPE, defaultPPE);
 
             GazeInteractor interactor = camGo.AddComponent<GazeInteractor>();
             camGo.AddComponent<EditorVRSimulator>();
@@ -269,20 +269,20 @@ namespace CBRN.Core
                 var gearField = typeof(PPESelectionStation).GetField("availableGear", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 gearField?.SetValue(station, gearList);
 
-                // Add 3 physical gear boxes on table
-                CreatePPEBox(lockerStation.transform, "PPE_Box_LevelD", new Vector3(-0.8f, 0.6f, 0f), ppeD, station);
-                CreatePPEBox(lockerStation.transform, "PPE_Box_LevelC", new Vector3(0.0f, 0.6f, 0f), ppeC, station);
-                CreatePPEBox(lockerStation.transform, "PPE_Box_LevelA", new Vector3(0.8f, 0.6f, 0f), ppeA, station);
+                // Add 3 physical gear boxes seated cleanly on top of the 2.5m locker table
+                CreatePPEBox(lockerStation.transform, "PPE_Box_LevelD", new Vector3(-0.32f, 0.7f, 0f), ppeD, station);
+                CreatePPEBox(lockerStation.transform, "PPE_Box_LevelC", new Vector3(0.0f, 0.7f, 0f), ppeC, station);
+                CreatePPEBox(lockerStation.transform, "PPE_Box_LevelA", new Vector3(0.32f, 0.7f, 0f), ppeA, station);
             }
 
-            // 9. Setup Hazard Placard on Tank Alpha
+            // 9. Setup Hazard Placard on Tank Alpha (parented to unscaled Hot Zone root to avoid cylinder scale distortion)
             GameObject tankAlpha = GameObject.Find("Tank_Alpha");
             if (tankAlpha != null)
             {
                 GameObject placard = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 placard.name = "Placard_UN_HazardDiamond";
-                placard.transform.SetParent(tankAlpha.transform);
-                placard.transform.position = tankAlpha.transform.position + new Vector3(0f, -0.5f, -2.1f);
+                placard.transform.SetParent(tankAlpha.transform.parent);
+                placard.transform.position = tankAlpha.transform.position + new Vector3(0f, -1.7f, -2.05f);
                 placard.transform.localScale = new Vector3(0.8f, 0.8f, 0.05f);
                 placard.transform.rotation = Quaternion.Euler(0f, 0f, 45f); // Diamond orientation
 
@@ -297,11 +297,11 @@ namespace CBRN.Core
             HazardSystem hazardSystem = null;
             if (ruptureSource != null)
             {
-                // Valve Wheel
+                // Valve Wheel (parented to unscaled Hot Zone root so wheel remains circular)
                 GameObject valve = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                 valve.name = "Valve_ShutoffWheel";
-                valve.transform.SetParent(ruptureSource.transform);
-                valve.transform.localPosition = new Vector3(0f, 0.6f, -0.4f);
+                valve.transform.SetParent(ruptureSource.transform.parent);
+                valve.transform.position = ruptureSource.transform.position + new Vector3(0f, 0.1f, -0.5f);
                 valve.transform.localScale = new Vector3(0.6f, 0.1f, 0.6f);
                 valve.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
 
@@ -381,7 +381,8 @@ namespace CBRN.Core
             box.name = name;
             box.transform.SetParent(parent);
             box.transform.localPosition = localPos;
-            box.transform.localScale = new Vector3(0.5f, 0.4f, 0.4f);
+            // Compensate for parent Station_PPELocker scale (2.5, 1.0, 1.0) so each box is 0.5m x 0.4m x 0.4m
+            box.transform.localScale = new Vector3(0.2f, 0.4f, 0.4f);
 
             PPESelectionItem item = box.AddComponent<PPESelectionItem>();
             item.Initialize(data, station);

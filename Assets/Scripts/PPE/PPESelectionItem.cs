@@ -30,13 +30,27 @@ namespace CBRN.PPE
         {
             ppeData = data;
             _station = station;
+            normalColor = data != null ? data.rackDisplayColor : Color.white;
 
             if (itemRenderer == null) itemRenderer = GetComponent<Renderer>();
             if (itemRenderer != null)
             {
-                _instancedMaterial = itemRenderer.material;
-                normalColor = data != null ? data.rackDisplayColor : Color.white;
-                _instancedMaterial.color = normalColor;
+                if (Application.isPlaying)
+                {
+                    if (_instancedMaterial == null)
+                    {
+                        _instancedMaterial = itemRenderer.material;
+                    }
+                    _instancedMaterial.color = _isEquipped ? equippedColor : normalColor;
+                }
+                else
+                {
+                    Shader shader = Shader.Find("Mobile/Diffuse") ?? Shader.Find("Standard");
+                    if (shader != null)
+                    {
+                        itemRenderer.sharedMaterial = new Material(shader) { color = normalColor };
+                    }
+                }
             }
         }
 
