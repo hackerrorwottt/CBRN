@@ -193,11 +193,12 @@ stateDiagram-v2
    cd /Users/shloksharma/Desktop/CBRN/server
    npm install
    ```
-2. Initialize MySQL 8:
+2. Configure environment and initialize MySQL 8:
    ```bash
-   mysql -u root -p < schema.sql
-   mysql -u root -p < seed.sql
+   cp .env.example .env
+   npm run db:init
    ```
+   *(Alternatively, import `schema.sql` and `seed.sql` manually via `mysql -u root -p`.)*
 3. Launch server:
    ```bash
    npm start
@@ -236,4 +237,19 @@ Open `/Users/shloksharma/Desktop/CBRN/dashboard/index.html` in any web browser t
 - **Lighting**: Real-time hard shadows limited to 20m distance; no dynamic soft shadows.
 - **Locomotion**: Discrete gaze-teleport waypoints eliminate vestibulo-ocular sensory conflict and motion sickness.
 - **Fail-Safe Offline Mode**: `OfflineQueue.cs` caches session telemetry locally if network drops, ensuring zero data loss.
+
+---
+
+## 8. System Verification & Test Matrix
+
+| Subsystem | Verification Check | Expected Outcome | Reference |
+| :--- | :--- | :--- | :--- |
+| **Gaze & Locomotion** | Look through `ZoneIdentifier` triggers at interactables; trigger `TeleportNode` waypoints | `Physics.RaycastAll` bypasses zone volumes and ignores `PlayerRig` self-collider; `PlayerRig` teleports without double eye-height offset | `GazeInteractor.cs`, `TeleportNode.cs`, `EditorVRSimulator.cs` |
+| **Hazard & PPE Flow** | Complete Step 1 -> Step 7 sequence; test Level D/C penalty vs Level A approval; close `Valve_ShutoffWheel` | Selecting Level D/C logs deduction; Level A unlocks safe Warm/Hot zone transit; valve closure stops expansion and dissipates `GasPlume_Visual` + `SphereCollider` | `MissionManager.cs`, `HazardSystem.cs`, `ValveShutoff.cs` |
+| **Casualty AI & Evac** | Approach panicked NPC, dwell/tap to triage, escort to `Station_TriageEvacuationPoint` | Transitions `Panic_Agitated` $\rightarrow$ `Following_Hero` (throttled NavMesh repath) $\rightarrow$ `Safe_Evacuated` (`Step 6` $\rightarrow$ `Step 7`) | `VictimAI.cs`, `RescueSystem.cs`, `EvacuationSystem.cs` |
+| **WorldSpace VR UI** | Run `CBRN -> 2. Setup Complete Training Scene` and inspect Cold Zone board, lower-FOV HUD, and Step 7 debrief | `UIManager` updates briefing billboard, corrective urgent hints, and scorecard panel with educational disclaimer | `ScenarioAssetInitializer.cs`, `UIManager.cs` |
+| **Backend REST API** | Run `npm test` in `server/` (19 automated Jest + Supertest & middleware unit assertions) | Rejects missing/out-of-range inputs (`400`), non-integer IDs (`400 INVALID_ID`), invalid/missing JWTs (`401`), and unauthorized roles (`403`) | `server/tests/api.test.js`, `server/tests/authMiddleware.test.js` |
+| **Offline Sync** | Trigger debrief while backend is unreachable, then relaunch with backend running | `OfflineQueue` caches up to 50 serialized sessions and `ApiClient` retains any unsubmitted payloads until confirmed HTTP `201` | `ApiClient.cs`, `OfflineQueue.cs` |
+| **Instructor Console** | Open `dashboard/index.html` while backend + MySQL are active | Renders Chart.js charts without raw HTML injection (`textContent` DOM nodes) and displays adaptive difficulty metrics | `dashboard/index.html`, `dashboard/app.js` |
+
 
