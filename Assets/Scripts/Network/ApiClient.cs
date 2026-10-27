@@ -119,11 +119,14 @@ namespace CBRN.Network
                 if (www.result == UnityWebRequest.Result.Success)
                 {
                     DifficultyResponse res = JsonUtility.FromJson<DifficultyResponse>(www.downloadHandler.text);
-                    Debug.Log($"[ApiClient] Adaptive difficulty retrieved: {res.adaptive_difficulty_multiplier:F2}x (Avg mistakes: {res.average_mistakes_last_5:F1})");
-
-                    if (hazardSystem != null)
+                    if (res != null && res.adaptive_difficulty_multiplier > 0f)
                     {
-                        hazardSystem.SetDifficultyMultiplier(res.adaptive_difficulty_multiplier);
+                        Debug.Log($"[ApiClient] Adaptive difficulty retrieved: {res.adaptive_difficulty_multiplier:F2}x (Avg mistakes: {res.average_mistakes_last_5:F1})");
+
+                        if (hazardSystem != null)
+                        {
+                            hazardSystem.SetDifficultyMultiplier(res.adaptive_difficulty_multiplier);
+                        }
                     }
                 }
                 else
@@ -164,7 +167,7 @@ namespace CBRN.Network
             StartCoroutine(SubmitSessionRoutine(payload));
         }
 
-        public IEnumerator SubmitSessionRoutine(SessionUploadPayload payload)
+        public IEnumerator SubmitSessionRoutine(SessionUploadPayload payload, bool enqueueOnFail = true, Action<bool> onComplete = null)
         {
             string url = $"{baseUrl}/sessions";
             string bodyJson = JsonUtility.ToJson(payload);
@@ -186,11 +189,16 @@ namespace CBRN.Network
                 if (www.result == UnityWebRequest.Result.Success)
                 {
                     Debug.Log($"[ApiClient] Session successfully saved to MySQL database! Response: {www.downloadHandler.text}");
+                    onComplete?.Invoke(true);
                 }
                 else
                 {
-                    Debug.LogWarning($"[ApiClient] Server unreachable ({www.error}). Saving session locally to OfflineQueue.");
-                    offlineQueue?.Enqueue(payload);
+                    Debug.LogWarning($"[ApiClient] Server unreachable ({www.error}).");
+                    if (enqueueOnFail)
+                    {
+                        offlineQueue?.Enqueue(payload);
+                    }
+                    onComplete?.Invoke(false);
                 }
             }
         }
@@ -203,13 +211,20 @@ namespace CBRN.Network
             if (pending.Count == 0) yield break;
 
             Debug.Log($"[ApiClient] Attempting to flush {pending.Count} offline sessions to server...");
+            var failedItems = new System.Collections.Generic.List<SessionUploadPayload>();
 
             for (int i = 0; i < pending.Count; i++)
             {
-                yield return SubmitSessionRoutine(pending[i]);
+                bool succeeded = false;
+                yield return SubmitSessionRoutine(pending[i], enqueueOnFail: false, result => succeeded = result);
+                if (!succeeded)
+                {
+                    failedItems.Add(pending[i]);
+                }
             }
 
-            offlineQueue.ClearPending();
+            // Retain any sessions that still failed to upload instead of deleting them
+            offlineQueue.ReplacePending(failedItems);
         }
     }
 }
