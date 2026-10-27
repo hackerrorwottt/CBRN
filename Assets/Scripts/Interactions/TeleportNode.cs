@@ -5,6 +5,7 @@ namespace CBRN.Interactions
     /// <summary>
     /// Gaze-activated waypoint for comfortable VR navigation without motion sickness.
     /// The trainee looks at the node for the dwell duration (or taps), and is teleported to this location.
+    /// Preserves original disc scale across gaze enter and exit states.
     /// </summary>
     public class TeleportNode : MonoBehaviour, IGazeInteractable
     {
@@ -24,9 +25,12 @@ namespace CBRN.Interactions
         [SerializeField] private Color activatedColor = new Color(0.2f, 1.0f, 0.4f, 1.0f);
 
         private Material _instancedMaterial;
+        private Vector3 _originalScale;
 
         private void Awake()
         {
+            _originalScale = transform.localScale;
+
             if (nodeRenderer == null) nodeRenderer = GetComponent<Renderer>();
             if (nodeRenderer != null)
             {
@@ -44,7 +48,7 @@ namespace CBRN.Interactions
         public void OnGazeEnter()
         {
             if (_instancedMaterial != null) _instancedMaterial.color = hoverColor;
-            transform.localScale *= 1.15f; // Gentle hover pop
+            transform.localScale = _originalScale * 1.15f; // Gentle hover pop
         }
 
         public void OnGazeStay(float normalizedProgress)
@@ -59,7 +63,7 @@ namespace CBRN.Interactions
         public void OnGazeExit()
         {
             if (_instancedMaterial != null) _instancedMaterial.color = normalColor;
-            transform.localScale = Vector3.one; // Reset scale
+            transform.localScale = _originalScale; // Restore exact initial scale
         }
 
         public void OnGazeTrigger()
@@ -94,4 +98,3 @@ namespace CBRN.Interactions
         }
     }
 }
-

@@ -175,9 +175,21 @@ namespace CBRN.Core
             IndustrialFacilityBuilder builder = builderGo.AddComponent<IndustrialFacilityBuilder>();
             builder.BuildFacility();
 
-            // 5. Setup Player Rig & Cardboard Gaze Camera
+            // 5. Setup Player Rig & Cardboard Gaze Camera with Physics Trigger Detection
             GameObject playerRig = new GameObject("PlayerRig");
             playerRig.transform.position = new Vector3(0f, 0f, -13f);
+
+            // Add CapsuleCollider and kinematic Rigidbody so all trigger volumes (Hazard gas, Zone boundaries) fire reliably
+            CapsuleCollider playerCol = playerRig.AddComponent<CapsuleCollider>();
+            playerCol.radius = 0.45f;
+            playerCol.height = 1.8f;
+            playerCol.center = new Vector3(0f, 0.9f, 0f);
+
+            Rigidbody playerRb = playerRig.AddComponent<Rigidbody>();
+            playerRb.isKinematic = true;
+            playerRb.useGravity = false;
+
+            SafetyZoneMonitor safetyMonitor = playerRig.AddComponent<SafetyZoneMonitor>();
 
             GameObject camGo = new GameObject("Main Camera");
             camGo.transform.SetParent(playerRig.transform);
@@ -208,12 +220,18 @@ namespace CBRN.Core
             var reticleField = typeof(GazeInteractor).GetField("reticle", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             reticleField?.SetValue(interactor, reticleComponent);
 
-            // 6. Setup Managers
+            // 6. Setup Briefing Board Interaction (Step 1 -> Step 2)
+            GameObject briefingBoardObj = GameObject.Find("Prop_BriefingBoard");
+            if (briefingBoardObj != null)
+            {
+                briefingBoardObj.AddComponent<BriefingBoard>();
+            }
+
+            // 7. Setup Managers
             GameObject managersGo = new GameObject("[--- MANAGERS ---]");
             MissionManager missionManager = managersGo.AddComponent<MissionManager>();
             AssessmentManager assessmentManager = managersGo.AddComponent<AssessmentManager>();
             HintSystem hintSystem = managersGo.AddComponent<HintSystem>();
-            SafetyZoneMonitor safetyMonitor = managersGo.AddComponent<SafetyZoneMonitor>();
             OfflineQueue offlineQueue = managersGo.AddComponent<OfflineQueue>();
             ApiClient apiClient = managersGo.AddComponent<ApiClient>();
             UIManager uiManager = managersGo.AddComponent<UIManager>();
@@ -237,7 +255,7 @@ namespace CBRN.Core
             var stepsField = typeof(MissionManager).GetField("scenarioSteps", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             stepsField?.SetValue(missionManager, stepList);
 
-            // 7. Setup PPE Selection Station in Cold Zone
+            // 8. Setup PPE Selection Station in Cold Zone
             GameObject lockerStation = GameObject.Find("Station_PPELocker");
             if (lockerStation != null)
             {
@@ -256,7 +274,7 @@ namespace CBRN.Core
                 CreatePPEBox(lockerStation.transform, "PPE_Box_LevelA", new Vector3(0.8f, 0.6f, 0f), ppeA, station);
             }
 
-            // 8. Setup Hazard Placard on Tank Alpha
+            // 9. Setup Hazard Placard on Tank Alpha
             GameObject tankAlpha = GameObject.Find("Tank_Alpha");
             if (tankAlpha != null)
             {
@@ -273,7 +291,7 @@ namespace CBRN.Core
                 profileField?.SetValue(placardComp, hazardProfile);
             }
 
-            // 9. Setup Rupture Source Valve & Gas Plume
+            // 10. Setup Rupture Source Valve & Gas Plume
             GameObject ruptureSource = GameObject.Find("Source_RupturedPipeJunction");
             HazardSystem hazardSystem = null;
             if (ruptureSource != null)
@@ -314,29 +332,33 @@ namespace CBRN.Core
                 targetHazardField?.SetValue(valveComp, hazardSystem);
             }
 
-            // 10. Setup Casualty / Victim NPC
+            // 11. Setup Casualty / Victim NPC with Kinematic Rigidbody
             GameObject victim = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             victim.name = "Victim_Casualty_NPC";
             victim.transform.position = new Vector3(2.5f, 1.0f, 7.5f); // Trapped behind crates
             victim.transform.localScale = new Vector3(0.8f, 1.0f, 0.8f);
 
-            victim.AddComponent<NavMeshAgent>();
-            VictimAI victimAi = victim.AddComponent<VictimAI>();
+            Rigidbody victimRb = victim.AddComponent<Rigidbody>();
+            victimRb.isKinematic = true;
+            victimRb.useGravity = false;
 
-            // 11. Setup Evacuation Point
+            victim.AddComponent<NavMeshAgent>();
+            victim.AddComponent<VictimAI>();
+
+            // 12. Setup Evacuation Point
             GameObject triagePoint = GameObject.Find("Station_TriageEvacuationPoint");
             if (triagePoint != null)
             {
                 EvacuationSystem evac = triagePoint.AddComponent<EvacuationSystem>();
             }
 
-            // 12. Setup Teleport Waypoints
+            // 13. Setup Teleport Waypoints
             CreateWaypoint("Teleport_ColdZone_Staging", new Vector3(0f, 0.02f, -10f));
             CreateWaypoint("Teleport_WarmZone_Perimeter", new Vector3(0f, 0.02f, -4f));
             CreateWaypoint("Teleport_HotZone_Observation", new Vector3(0f, 0.02f, 3f));
             CreateWaypoint("Teleport_Decon_TriagePoint", new Vector3(6f, 0.02f, -4f));
 
-            // 13. Save Complete Scene
+            // 14. Save Complete Scene
             EditorSceneManager.SaveScene(scene, MainScenePath);
 
             // Register in Build Settings

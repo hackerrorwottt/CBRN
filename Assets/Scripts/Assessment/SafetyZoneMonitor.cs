@@ -10,9 +10,12 @@ namespace CBRN.Assessment
     /// Tracks trainee movement across CBRN operational zones (Cold, Warm, Hot, Evacuation).
     /// Enforces disaster response safety protocols: checks PPE compliance and hazard identification
     /// before permitting safe operations in the Hot Zone.
+    /// Supports both direct trigger detection and notifications from ZoneIdentifier.
     /// </summary>
     public class SafetyZoneMonitor : MonoBehaviour
     {
+        public static SafetyZoneMonitor Instance { get; private set; }
+
         [Header("References")]
         [Tooltip("Player PPE state tracker.")]
         [SerializeField] private PlayerPPEState playerPPE;
@@ -29,12 +32,15 @@ namespace CBRN.Assessment
 
         private void Awake()
         {
+            Instance = this;
+
             if (playerPPE == null) playerPPE = FindObjectOfType<PlayerPPEState>();
             HazardPlacard.OnHazardIdentified += HandleHazardIdentified;
         }
 
         private void OnDestroy()
         {
+            if (Instance == this) Instance = null;
             HazardPlacard.OnHazardIdentified -= HandleHazardIdentified;
         }
 
@@ -43,12 +49,11 @@ namespace CBRN.Assessment
             hasIdentifiedHazard = true;
         }
 
-        private void OnTriggerEnter(Collider other)
+        /// <summary>
+        /// Called when the trainee crosses into a new operational zone.
+        /// </summary>
+        public void OnZoneBoundaryCrossed(ZoneType enteredZone)
         {
-            ZoneIdentifier zone = other.GetComponent<ZoneIdentifier>();
-            if (zone == null) return;
-
-            ZoneType enteredZone = zone.CurrentZoneType;
             if (enteredZone == currentZone) return;
 
             currentZone = enteredZone;
@@ -56,6 +61,15 @@ namespace CBRN.Assessment
             OnZoneEntered?.Invoke(currentZone);
 
             EvaluateSafetyCompliance(enteredZone);
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            ZoneIdentifier zone = other.GetComponent<ZoneIdentifier>();
+            if (zone != null)
+            {
+                OnZoneBoundaryCrossed(zone.CurrentZoneType);
+            }
         }
 
         private void EvaluateSafetyCompliance(ZoneType zone)
@@ -77,4 +91,3 @@ namespace CBRN.Assessment
         }
     }
 }
-

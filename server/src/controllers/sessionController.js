@@ -133,9 +133,9 @@ async function getUserHistory(req, res) {
  */
 async function getLeaderboard(req, res) {
   try {
-    const limit = parseInt(req.query.limit || '10', 10);
+    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit, 10) || 10));
 
-    const [rows] = await db.execute(
+    const [rows] = await db.query(
       `SELECT s.id, u.username, sc.title AS scenario_title, s.score,
               s.total_duration_seconds, s.total_mistakes, s.created_at
        FROM sessions s

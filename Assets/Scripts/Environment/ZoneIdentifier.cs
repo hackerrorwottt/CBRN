@@ -1,9 +1,13 @@
 using UnityEngine;
+using CBRN.Assessment;
+using CBRN.PPE;
+using CBRN.Interactions;
 
 namespace CBRN.Environment
 {
     /// <summary>
     /// Identifies and visually marks operational zone boundaries in the Scene view using Gizmos.
+    /// Detects when the trainee enters this zone volume and notifies the SafetyZoneMonitor.
     /// </summary>
     [RequireComponent(typeof(Collider))]
     public class ZoneIdentifier : MonoBehaviour
@@ -18,6 +22,20 @@ namespace CBRN.Environment
         [SerializeField] private float debugAlpha = 0.25f;
 
         public ZoneType CurrentZoneType => zoneType;
+
+        private void OnTriggerEnter(Collider other)
+        {
+            // Verify if the entering entity is the trainee
+            if (other.GetComponentInParent<PlayerPPEState>() != null ||
+                other.GetComponentInParent<GazeInteractor>() != null ||
+                other.CompareTag("MainCamera"))
+            {
+                if (SafetyZoneMonitor.Instance != null)
+                {
+                    SafetyZoneMonitor.Instance.OnZoneBoundaryCrossed(zoneType);
+                }
+            }
+        }
 
         private void OnDrawGizmos()
         {
@@ -49,4 +67,3 @@ namespace CBRN.Environment
         }
     }
 }
-

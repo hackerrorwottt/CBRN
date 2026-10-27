@@ -8,6 +8,7 @@ namespace CBRN.AI
     /// <summary>
     /// NavMesh-based AI State Machine for disaster victims.
     /// States: Panic -> Following (when triaged by trainee) -> Safe (when evacuated to triage zone).
+    /// Robust against unbaked NavMesh and ensures kinematic collision detection.
     /// </summary>
     [RequireComponent(typeof(NavMeshAgent), typeof(Collider))]
     public class VictimAI : MonoBehaviour, IGazeInteractable
@@ -49,6 +50,15 @@ namespace CBRN.AI
             _agent = GetComponent<NavMeshAgent>();
             _initialPosition = transform.position;
 
+            // Ensure a kinematic Rigidbody exists so trigger collisions with EvacuationSystem fire reliably
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb == null)
+            {
+                rb = gameObject.AddComponent<Rigidbody>();
+            }
+            rb.isKinematic = true;
+            rb.useGravity = false;
+
             if (victimRenderer == null) victimRenderer = GetComponent<Renderer>();
             if (victimRenderer != null)
             {
@@ -84,6 +94,8 @@ namespace CBRN.AI
 
         private void UpdatePanicState()
         {
+            if (_agent == null || !_agent.isOnNavMesh) return;
+
             _panicTimer += Time.deltaTime;
             if (_panicTimer >= panicStepInterval)
             {
@@ -106,7 +118,7 @@ namespace CBRN.AI
                 _playerTransform = Camera.main.transform.parent != null ? Camera.main.transform.parent : Camera.main.transform;
             }
 
-            if (_playerTransform != null)
+            if (_playerTransform != null && _agent != null && _agent.isOnNavMesh)
             {
                 _agent.stoppingDistance = followStoppingDistance;
                 _agent.speed = 2.4f;
@@ -133,8 +145,11 @@ namespace CBRN.AI
 
             if (currentState == VictimState.Safe_Evacuated)
             {
-                _agent.isStopped = true;
-                _agent.ResetPath();
+                if (_agent != null && _agent.isOnNavMesh)
+                {
+                    _agent.isStopped = true;
+                    _agent.ResetPath();
+                }
                 OnVictimEvacuated?.Invoke(this);
             }
         }
@@ -180,4 +195,3 @@ namespace CBRN.AI
         }
     }
 }
-
